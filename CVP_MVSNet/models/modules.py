@@ -116,32 +116,34 @@ def calDepthHypo(netArgs,ref_depths,ref_intrinsics,src_intrinsics,ref_extrinsics
     with torch.no_grad():
 
         ref_depths = ref_depths
-        ref_intrinsics = ref_intrinsics.double()
-        src_intrinsics = src_intrinsics.squeeze(1).double()
-        ref_extrinsics = ref_extrinsics.double()
-        src_extrinsics = src_extrinsics.squeeze(1).double()
+        ref_intrinsics = ref_intrinsics
+        src_intrinsics = src_intrinsics.squeeze(1)
+        ref_extrinsics = ref_extrinsics
+        src_extrinsics = src_extrinsics.squeeze(1)
 
         interval_maps = []
         depth_hypos = ref_depths.unsqueeze(1).repeat(1,d*2,1,1)
         for batch in range(nBatch):
-            xx, yy = torch.meshgrid([torch.arange(0,width).cuda(),torch.arange(0,height).cuda()])
+            xx, yy = torch.meshgrid([torch.arange(0,width),torch.arange(0,height)])
 
-            xxx = xx.reshape([-1]).double()
-            yyy = yy.reshape([-1]).double()
+            xxx = xx.reshape([-1]).cuda().float()
+            yyy = yy.reshape([-1]).cuda().float()
 
             X = torch.stack([xxx, yyy, torch.ones_like(xxx)],dim=0)
 
             D1 = torch.transpose(ref_depths[batch,:,:],0,1).reshape([-1]) # Transpose before reshape to produce identical results to numpy and matlab version.
-            D2 = D1+1
-
+            # D2 = D1+1
             X1 = X*D1
-            X2 = X*D2
+
+            D1 = D1+1
+            X2 = X*D1
+
             ray1 = torch.matmul(torch.inverse(ref_intrinsics[batch]),X1)
             ray2 = torch.matmul(torch.inverse(ref_intrinsics[batch]),X2)
 
-            X1 = torch.cat([ray1, torch.ones_like(xxx).unsqueeze(0).double()],dim=0)
+            X1 = torch.cat([ray1, X[-1,:].unsqueeze(0)],dim=0)
             X1 = torch.matmul(torch.inverse(ref_extrinsics[batch]),X1)
-            X2 = torch.cat([ray2, torch.ones_like(xxx).unsqueeze(0).double()],dim=0)
+            X2 = torch.cat([ray2, X[-1,:].unsqueeze(0)],dim=0)
             X2 = torch.matmul(torch.inverse(ref_extrinsics[batch]),X2)
 
             X1 = torch.matmul(src_extrinsics[batch][0], X1)
@@ -154,11 +156,12 @@ def calDepthHypo(netArgs,ref_depths,ref_intrinsics,src_intrinsics,ref_extrinsics
 
             X2 = X2[:3]
             X2 = torch.matmul(src_intrinsics[batch][0],X2)
-            X2_d = X2[2].clone()
-            X2 /= X2_d
+            # X2_d = X2[2].clone()
+            X2 = X2 / X2[2]
 
             k = (X2[1]-X1[1])/(X2[0]-X1[0])
-            b = X1[1]-k*X1[0]
+            # b = X1[1]-k*X1[0]
+            del X2
 
             theta = torch.atan(k)
             X3 = X1+torch.stack([torch.cos(theta)*pixel_interval,torch.sin(theta)*pixel_interval,torch.zeros_like(X1[2,:])],dim=0)
@@ -185,7 +188,7 @@ def calDepthHypo(netArgs,ref_depths,ref_intrinsics,src_intrinsics,ref_extrinsics
 
         # pdb.set_trace()
 
-        return depth_hypos.float() # Return the depth hypothesis map from statistical interval setting.
+        return depth_hypos # Return the depth hypothesis map from statistical interval setting.
 
 def proj_cost(settings,ref_feature,src_feature,level,ref_in,src_in,ref_ex,src_ex,depth_hypos):
     ## Calculate the cost volume for refined depth hypothesis selection
