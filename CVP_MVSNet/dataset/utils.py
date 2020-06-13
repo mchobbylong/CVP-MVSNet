@@ -134,7 +134,7 @@ def read_img(filename):
     # scale 0~255 to 0~1
     img = np.array(img, dtype=np.float32) / 255.
     if img.shape[0] == 1200:
-        img = img[:1184,:1600,:]
+        img = img[:1152,:1600,:]
 
     return img
 
