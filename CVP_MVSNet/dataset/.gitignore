@@ -1,3 +1,4 @@
-__pycache__
-dtu-train-128
-dtu-test-1200
+!dataPaths.py
+!dtu_jiayu.py
+!utils.py
+*
