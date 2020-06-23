@@ -50,4 +50,4 @@ def checkArgs(args):
     if args.resume:
         assert len(args.loadckpt) == 0
     if args.loadckpt:
-        assert args.resume is 0
+        assert args.resume == 0
