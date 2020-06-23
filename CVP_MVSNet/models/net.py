@@ -75,8 +75,10 @@ class CostRegNet(nn.Module):
         conv4 = self.conv4a(self.conv4(self.conv3(conv2)))
 
         conv5 = conv2+self.conv5(conv4)
+        del conv2, conv4
 
         conv6 = conv0+self.conv6(conv5)
+        del conv0, conv5
         prob = self.prob0(conv6).squeeze(1)
 
         return prob
