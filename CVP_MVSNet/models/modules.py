@@ -54,12 +54,12 @@ def calSweepingDepthHypo(ref_in,src_in,ref_ex,src_ex,depth_min, depth_max, nhypo
     # Make sure the number of depth hypothesis has a factor of 2
     assert nhypothesis_init%2 == 0
 
-    depth_hypos = torch.range(depth_min[0],depth_max[0],depth_interval_mean).unsqueeze(0)
+    depth_hypos = torch.arange(depth_min[0],depth_max[0]+depth_interval_mean*0.01,depth_interval_mean).repeat(batchSize, 1)
 
     # Assume depth range is consistent in one batch.
-    for b in range(1,batchSize):
-        depth_range = depth_max[b]-depth_min[b]
-        depth_hypos = torch.cat((depth_hypos,torch.range(depth_min[0],depth_max[0],depth_interval_mean).unsqueeze(0)),0)
+    # for b in range(1,batchSize):
+    #     depth_range = depth_max[b]-depth_min[b]
+    #     depth_hypos = torch.cat((depth_hypos,torch.range(depth_min[0],depth_max[0],depth_interval_mean).unsqueeze(0)),0)
 
     return depth_hypos.cuda()
 
